@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/kravetsd/quiz/timer"
 )
 
 func main() {
@@ -47,6 +49,7 @@ func main() {
 		return
 	}
 
+	timer.StartTimer()
 	//create a variable to store the score
 	var score int
 
