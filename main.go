@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 )
 
 func main() {
@@ -23,17 +24,19 @@ func main() {
 	flag.String("h", "", "print this help message")
 
 	// default timer set to 30s
-	flag.String("timer", "30s", "set the timer for the quiz")
+	flag.String("timer", "10s", "set the timer for the quiz")
 
 	// parsing the flags
 	flag.Parse()
 
 	// getting the value of the flag
 	csvFilePath := flag.Lookup("problem-file").Value.String()
-	//timer, err := time.ParseDuration(flag.Lookup("timer").Value.String())
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+
+	// getting the value of the timer flag
+	timer, err := time.ParseDuration(flag.Lookup("timer").Value.String())
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	fmt.Println("Openning quiz from file:", csvFilePath)
 
@@ -55,50 +58,40 @@ func main() {
 		os.Exit(0)
 	}
 
-	// ch := make(chan time.Time)
-	// ansch := make(chan string)
-	// go func() {
-	// 	ch := time.After(timer)
-	// }()
-
-	// go func() {
-	// 	var answer string
-	// 	fmt.Println("Answer: ")
-	// 	fmt.Scanln(&answer)
-	// 	ansch <- answer
-	// }()
-
-	// for {
-	// 	select {
-	// 	case <-time.After(timer):
-	// 		fmt.Println("Time is up!")
-	// 		os.Exit(0)
-	// 	case <-ansch:
-
-	// 	}
-	// }
-
 	// read all the records from csv file
 	recs, err := csvReader.ReadAll()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	countScore(recs)
-}
+	// preparing channels for goroutines to signal that they are done
+	done := make(chan bool)
 
-func countScore(recs [][]string) {
+	go func() {
+		time.Sleep(timer)
+		fmt.Println("Time is up!")
+		done <- true
+		close(done)
+
+	}()
+
 	counter := 0
-	for _, rec := range recs {
-		fmt.Println("Question:", rec[0], "?")
-		// getting answer from user via console
-		var answer string
-		fmt.Println("Answer: ")
-		fmt.Scanln(&answer)
-		if answer == rec[1] {
-			counter++
+	go func() {
+		for _, rec := range recs {
+			fmt.Println("Question:", rec[0], "?")
+			// getting answer from user via console
+			var answer string
+			fmt.Println("Answer: ")
+			fmt.Scanln(&answer)
+			if answer == rec[1] {
+				counter++
+			}
 		}
+		done <- true
+		close(done)
+	}()
+
+	if <-done {
+		fmt.Println("Your score is:", counter, "from", len(recs))
 	}
-	// print the score
-	fmt.Println("Your score is:", counter, "from", len(recs))
 }
