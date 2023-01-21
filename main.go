@@ -11,8 +11,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-
-	"github.com/kravetsd/quiz/timer"
 )
 
 func main() {
@@ -24,11 +22,18 @@ func main() {
 	// setting help flag and meesage
 	flag.String("h", "", "print this help message")
 
+	// default timer set to 30s
+	flag.String("timer", "30s", "set the timer for the quiz")
+
 	// parsing the flags
 	flag.Parse()
 
 	// getting the value of the flag
 	csvFilePath := flag.Lookup("problem-file").Value.String()
+	//timer, err := time.ParseDuration(flag.Lookup("timer").Value.String())
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
 	fmt.Println("Openning quiz from file:", csvFilePath)
 
@@ -37,21 +42,41 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer csvFile.Close()
 	// create a receiver for csv file
 	csvReader := csv.NewReader(csvFile)
 
 	// ask if user is ready to start the quiz
 	var ready string
-	fmt.Println("Are you ready to start the quiz? (y/n)")
-	fmt.Scanln(&ready) // getting answer from user via console
+	fmt.Println("Are you ready to start the quiz and timer? (y/n)")
+	fmt.Scanln(&ready) // getting ENTER from user
 	if ready != "y" {
 		fmt.Println("Ok, bye!")
-		return
+		os.Exit(0)
 	}
 
-	timer.StartTimer()
-	//create a variable to store the score
-	var score int
+	// ch := make(chan time.Time)
+	// ansch := make(chan string)
+	// go func() {
+	// 	ch := time.After(timer)
+	// }()
+
+	// go func() {
+	// 	var answer string
+	// 	fmt.Println("Answer: ")
+	// 	fmt.Scanln(&answer)
+	// 	ansch <- answer
+	// }()
+
+	// for {
+	// 	select {
+	// 	case <-time.After(timer):
+	// 		fmt.Println("Time is up!")
+	// 		os.Exit(0)
+	// 	case <-ansch:
+
+	// 	}
+	// }
 
 	// read all the records from csv file
 	recs, err := csvReader.ReadAll()
@@ -59,6 +84,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	countScore(recs)
+}
+
+func countScore(recs [][]string) {
+	counter := 0
 	for _, rec := range recs {
 		fmt.Println("Question:", rec[0], "?")
 		// getting answer from user via console
@@ -66,11 +96,9 @@ func main() {
 		fmt.Println("Answer: ")
 		fmt.Scanln(&answer)
 		if answer == rec[1] {
-			score++
+			counter++
 		}
 	}
-
 	// print the score
-	fmt.Println("Your score is:", score, "from", len(recs))
-
+	fmt.Println("Your score is:", counter, "from", len(recs))
 }
